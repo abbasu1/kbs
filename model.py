@@ -24,43 +24,38 @@ def get_model():
 
 def predict_xray(image_file):
     """
-    Predict pneumonia probability from an uploaded X-ray image.
+    Predict pneumonia/lung opacity from an uploaded X-ray image.
     Returns:
-        float: Probability score between 0.0 and 1.0.
+        tuple: (label, confidence)
     """
     model = get_model()
     
+    # Class mapping based on flow_from_directory alphabetical sorting
+    CLASSES = ["Lung Opacity", "Normal", "Pneumonia"]
+    
     if model is None:
         # --- SIMULATION MODE ---
-        # If model is not trained/found, return a random score for testing
         import random
-        return random.uniform(0.1, 0.9)
+        label = random.choice(CLASSES)
+        score = random.uniform(0.6, 0.99)
+        return label, score
         
     try:
-        # Load image via PIL (handles Streamlit UploadedFile)
         img = Image.open(image_file)
-        
-        # Convert to RGB (required if the model expects 3 channels)
         if img.mode != "RGB":
             img = img.convert("RGB")
-            
-        # Resize to match model input shape (224x224)
         img = img.resize((224, 224))
         
-        # Preprocess: convert to array and normalize
         img_array = img_to_array(img)
         img_array = img_array / 255.0
-        
-        # Expand dims since model expects a batch (1, 224, 224, 3)
         img_array = np.expand_dims(img_array, axis=0)
         
-        # Predict
-        prediction = model.predict(img_array)
+        predictions = model.predict(img_array)
+        class_idx = np.argmax(predictions[0])
+        confidence = float(predictions[0][class_idx])
         
-        # For a sigmoid output, it's a single float
-        probability = float(prediction[0][0])
-        return probability
+        return CLASSES[class_idx], confidence
         
     except Exception as e:
         print(f"Prediction error: {e}")
-        return None
+        return None, 0.0

@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from tensorflow.keras.callbacks import ModelCheckpoint
 
 def build_model():
-    """Build a simple CNN model for pneumonia classification."""
+    """Build a simple CNN model for pneumonia and lung opacity classification."""
     model = Sequential([
         Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 3)),
         MaxPooling2D((2, 2)),
@@ -19,11 +19,11 @@ def build_model():
         Flatten(),
         Dense(128, activation='relu'),
         Dropout(0.5),
-        Dense(1, activation='sigmoid')  # Binary classification
+        Dense(3, activation='softmax')  # 3-class classification
     ])
     
     model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
+                  loss='categorical_crossentropy',
                   metrics=['accuracy'])
     return model
 
@@ -32,7 +32,7 @@ def main():
     test_dir = 'dataset/test'
     
     if not os.path.exists(train_dir) or not os.listdir(train_dir):
-        print("Dataset not found! Please place your PNEUMONIA and NORMAL folders inside dataset/train/ and dataset/test/.")
+        print("Dataset not found! Please run prepare_data.py first.")
         return
 
     # Data augmentation and preprocessing for training
@@ -40,7 +40,8 @@ def main():
         rescale=1./255,
         rotation_range=20,
         zoom_range=0.2,
-        horizontal_flip=True
+        horizontal_flip=True,
+        validation_split=0.1  # Use 10% of training data for validation during epoch
     )
     
     # Preprocessing for testing
@@ -50,14 +51,14 @@ def main():
         train_dir,
         target_size=(224, 224),
         batch_size=32,
-        class_mode='binary'
+        class_mode='categorical'
     )
     
     test_generator = test_datagen.flow_from_directory(
         test_dir,
         target_size=(224, 224),
         batch_size=32,
-        class_mode='binary'
+        class_mode='categorical'
     )
     
     model = build_model()
@@ -69,7 +70,7 @@ def main():
     print("Starting training...")
     history = model.fit(
         train_generator,
-        epochs=10,
+        epochs=2,
         validation_data=test_generator,
         callbacks=[checkpoint]
     )
