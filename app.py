@@ -62,20 +62,20 @@ if submit:
     }
     
     with st.spinner("Analyzing patient facts and medical scans..."):
-        ai_score = None
+        ai_result = None
         
         # If X-ray image is uploaded -> run AI prediction
         if xray_file is not None:
-            ai_score = model.predict_xray(xray_file)
+            ai_result = model.predict_xray(xray_file)
             
         # Inference Engine applies rules
         is_suspect, is_high_risk = inference.run_rules(fact_base)
         
         # Decision Fusion combines AI prediction + rules
-        result = inference.decision_fusion(is_suspect, is_high_risk, ai_score)
+        result = inference.decision_fusion(is_suspect, is_high_risk, ai_result)
         
         # Explanation Module generates reasoning
-        reasons = utils.generate_explanation(fact_base, is_suspect, is_high_risk, ai_score, result)
+        reasons = utils.generate_explanation(fact_base, is_suspect, is_high_risk, ai_result, result)
     
     # Final Output Show
     st.header("📤 Diagnosis Results")

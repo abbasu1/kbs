@@ -17,22 +17,27 @@ def run_rules(fact_base):
     
     return is_suspect_pneumonia, is_high_risk
 
-def decision_fusion(is_suspect, is_high_risk, ai_score=None):
+def decision_fusion(is_suspect, is_high_risk, ai_result=None):
     """
     Combine AI prediction and rule-based system results into a final diagnosis.
     Returns:
-        str: Diagnosis string ("High Risk Pneumonia", "Medium Risk", "Low Risk").
+        str: Diagnosis string.
     """
-    # Use 0 as default if AI score is not provided/available
-    ai_prob = ai_score if ai_score is not None else 0.0
+    ai_label, ai_conf = ai_result if ai_result is not None else (None, 0.0)
     
-    # if AI > 0.8 OR high_risk → High Risk Pneumonia
-    if ai_prob > 0.8 or is_high_risk:
-        return "High Risk Pneumonia"
+    # 1. High Risk Scenario
+    if is_high_risk or (ai_label == "Pneumonia" and ai_conf > 0.8):
+        return "High Risk: Pneumonia Detected"
     
-    # if suspect → Medium Risk
-    if is_suspect:
-        return "Medium Risk"
+    # 2. Medium Risk / Lung Opacity
+    if ai_label == "Lung Opacity" and ai_conf > 0.7:
+        return "Medium Risk: Lung Opacity Detected"
     
-    # else → Low Risk
+    if is_suspect or (ai_label == "Pneumonia" and ai_conf > 0.5):
+        return "Medium Risk: Suspected Pneumonia"
+    
+    # 3. Low Risk
+    if ai_label == "Normal" and ai_conf > 0.8 and not is_suspect:
+        return "Low Risk: X-ray appears Normal"
+        
     return "Low Risk"
